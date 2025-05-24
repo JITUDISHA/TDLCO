@@ -1,0 +1,324 @@
+ <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TDL CO.</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family:  'Gill Sans MT',  sans-serif;
+            color: #dde3ba;
+        }
+
+ 
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .note-form {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        #noteTitle, #noteContent, #searchInput {
+            
+            padding: 10px;
+            border: 1px solid #ffffff;
+            border-radius: 5px;
+            font-size: 16px;
+            background-color: #007bff00;
+            box-shadow: 0 2px 5px rgb(0, 0, 0);
+
+        }
+ 
+
+        #noteContent {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        button {
+            padding: 10px;
+            background-color: #4b8bcf60;
+            color: rgb(0, 0, 0);
+             border: 2px solid black ;
+           
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background-color: #06223f7a;
+            color: white;
+        }
+
+        .search-bar {
+            margin-bottom: 20px;
+        }
+
+        .notes-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .note {
+            padding: 15px;
+            border-radius: 35px;
+            box-shadow: 0 7px 8px rgb(0, 0, 0);
+            background-color: rgba(94, 92, 94, 0.558);
+        }
+        .note:hover {
+            background-color: rgb(76, 76, 76);
+
+            padding: 15px;
+            transform: scale(1.1);
+            border-radius: 15px;
+            box-shadow: 0 12px 15px rgb(255, 251, 251);
+            cursor:pointer;
+        }
+
+        .note h3 {
+            margin-bottom: 5px;
+            color: #333;
+        }
+
+        .note p {
+            margin-bottom: 10px;
+            color: #666;
+        }
+
+        .note small {
+            color: #999;
+        }
+
+        .note-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .note-actions button {
+            padding: 5px 10px;
+            font-size: 14px;
+        }
+
+        .delete-btn {
+            background-color: #dc3545;
+        }
+
+        .delete-btn:hover {
+            background-color: #b02a37;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .pagination button {
+            padding: 5px 10px;
+        }
+
+        .pagination button:disabled {
+            background-color: #b9b9b9a1;
+            cursor: not-allowed;
+        }
+
+ body {
+      background: linear-gradient(270deg, #bf6fd3, #3f8dbd, #53d896,rgba(208, 0, 255, 0.879) , rgb(188, 255, 4));
+      background-size: 600% 600%;
+      animation: gradientShift 16s ease-in-out infinite;
+      color: #fff;
+      overflow-x: hidden;
+    }
+
+    @keyframes gradientShift {
+      0% {
+        background-position: 0% ;
+      }
+      50% {
+        background-position: 100% ;
+      }
+      100% {
+        background-position: 0% ;
+      }
+    }
+
+
+
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 10px;
+            }
+
+            #noteTitle, #noteContent, #searchInput {
+                font-size: 14px;
+            }
+
+            button {
+                font-size: 14px;
+            }
+        }
+    </style> 
+</head>
+<body>
+    <div class="container">
+        <h1  style="color: #dde3ba;"> TO DO LIST CO. </h1>
+        
+ 
+        <div class="note-form">
+            <input type="text" id="noteTitle" placeholder="Note Title" required>
+            <textarea id="noteContent" placeholder="Note Content" required></textarea>
+            <button onclick="saveNote()">Save Note</button>
+        </div>
+
+ 
+        <div class="search-bar">
+            <input type="text" id="searchInput" placeholder="Search by title..." onkeyup="searchNotes()">
+        </div>
+ 
+        <div id="notesList" class="notes-list"></div>
+
+ 
+        <div class="pagination">
+            <button onclick="prevPage()" id="prevBtn">Previous</button>
+            <span id="pageInfo"></span>
+            <button onclick="nextPage()" id="nextBtn">Next</button>
+        </div>
+    </div>
+
+    <script>
+ 
+        let notes = JSON.parse(localStorage.getItem('notes')) || [];
+        let currentPage = 1;
+        const notesPerPage = 10;
+        let filteredNotes = [...notes];
+
+ 
+        function saveNote() {
+            const title = document.getElementById('noteTitle').value.trim();
+            const content = document.getElementById('noteContent').value.trim();
+
+            if (!title || !content) {
+                alert('Please fill in both title and content.');
+                return;
+            }
+
+            const now = new Date();
+            const note = {
+                id: Date.now(), 
+                title,
+                content,
+                createdDate: now,
+                updatedDate: now
+            };
+
+            notes.push(note);
+            localStorage.setItem('notes', JSON.stringify(notes));
+            filteredNotes = [...notes];
+            sortNotesByUpdatedDate();
+            renderNotes();
+            clearForm();
+        }
+ 
+        function clearForm() {
+            document.getElementById('noteTitle').value = '';
+            document.getElementById('noteContent').value = '';
+        }
+ 
+        function renderNotes() {
+            const notesList = document.getElementById('notesList');
+            notesList.innerHTML = '';
+
+            const start = (currentPage - 1) * notesPerPage;
+            const end = start + notesPerPage;
+            const paginatedNotes = filteredNotes.slice(start, end);
+
+            paginatedNotes.forEach(note => {
+                const noteElement = document.createElement('div');
+                noteElement.classList.add('note');
+                noteElement.innerHTML = `
+                    <h3>${note.title}</h3>
+                    <p>${note.content}</p>
+                    <small>Created: ${new Date(note.createdDate).toLocaleString()}</small><br>
+                    <small>Updated: ${new Date(note.updatedDate).toLocaleString()}</small>
+                    <div class="note-actions">
+                        <button onclick="deleteNote(${note.id})" class="delete-btn">Delete</button>
+                    </div>
+                `;
+                notesList.appendChild(noteElement);
+            });
+
+            updatePagination();
+        }
+ 
+        function updatePagination() {
+            const totalPages = Math.ceil(filteredNotes.length / notesPerPage);
+            document.getElementById('pageInfo').textContent = `Page ${currentPage} of ${totalPages || 1}`;
+            document.getElementById('prevBtn').disabled = currentPage === 1;
+            document.getElementById('nextBtn').disabled = currentPage === totalPages || totalPages === 0;
+        }
+ 
+        function prevPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                renderNotes();
+            }
+        }
+
+ 
+        function nextPage() {
+            const totalPages = Math.ceil(filteredNotes.length / notesPerPage);
+            if (currentPage < totalPages) {
+                currentPage++;
+                renderNotes();
+            }
+        }
+
+ 
+        function searchNotes() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            filteredNotes = notes.filter(note => note.title.toLowerCase().includes(searchTerm));
+            sortNotesByUpdatedDate();
+            currentPage = 1;  
+            renderNotes();
+        }
+ 
+        function sortNotesByUpdatedDate() {
+            filteredNotes.sort((a, b) => new Date(b.updatedDate) - new Date(a.updatedDate));
+        }
+
+ 
+        function deleteNote(id) {
+            if (confirm('Are you sure you want to delete this note?')) {
+                notes = notes.filter(note => note.id !== id);
+                localStorage.setItem('notes', JSON.stringify(notes));
+                filteredNotes = [...notes];
+                sortNotesByUpdatedDate();
+                renderNotes();
+            }
+        }
+ 
+        sortNotesByUpdatedDate();
+        renderNotes();
+    </script>
+</body>
+</html>
